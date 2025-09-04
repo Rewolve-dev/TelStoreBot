@@ -61,14 +61,14 @@
 
 4.  ربات را اجرا کنید:
     ```bash
-    python StoreTelBot.py
+    python main.py
     ```
 
 ## 📖 ساختار پروژه
 
 ```
-StoreTelBot/
-├── StoreTelBot.py          # فایل اصلی ربات
+StoreTelBot
+├── main.py                # فایل اصلی ربات
 ├── info.py                # تنظیمات و توکن‌ها
 ├── DML.py                 # عملیات نوشتن در دیتابیس (Insert/Update/Delete)
 ├── DQL.py                 # عملیات خواندن از دیتابیس (Query)
@@ -108,7 +108,7 @@ StoreTelBot/
 
 ### اضافه کردن بازی جدید
 
-1. یک بخش جدید در `StoreTelBot.py` اضافه کنید:
+1. یک بخش جدید در `main.py` اضافه کنید:
 ```python
 insert_GAMESECTION_data(5, "Game Name", "Publisher")
 game_prices = {

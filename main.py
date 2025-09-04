@@ -1,3 +1,4 @@
+#PUBLISH: 2025-09-01 BY REWOLVE (@Rewolve)
 
 import telebot
 from telebot.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
@@ -9,6 +10,25 @@ import time
 import logging
 
 from info import *
+
+
+from DML import *
+from DQL import *
+
+
+
+logging.getLogger('telebot').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.basicConfig(filename = "StoreTelBot.log", level = logging.DEBUG, format = '%(asctime)s  |||||||  %(message)s')
+
+bot = telebot.TeleBot(API_TOKEN)
+
+hideboard = ReplyKeyboardRemove()
+
+userdata = dict()
+usersteps = dict()
+orders = dict()
+usertempdata = dict()
 
 
 
@@ -28,22 +48,9 @@ Texts = {
 }
 
 
-logging.getLogger('telebot').setLevel(logging.WARNING)
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-logging.basicConfig(filename = "StoreTelBot.log", level = logging.DEBUG, format = '%(asctime)s  |||||||  %(message)s')
 
-bot = telebot.TeleBot(API_TOKEN)
-
-hideboard = ReplyKeyboardRemove()
-
-userdata = dict()
-usersteps = dict()
-orders = dict()
-active_chats = dict()
-usertempdata = dict()
-
-
-
+for adminid in adminlist:
+    insert_ADMIN_data(adminid, adminlist[adminid]['phonenumber'], adminlist[adminid]['acceptedorders'] )
 
 
 #-------------------------------------------------------------------------------
@@ -53,7 +60,7 @@ usertempdata = dict()
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 
-
+insert_GAMESECTION_data(1, "Mobile Legends", "Moontoon")
 MLBBPrices = {
 
             "50 Diamonds"   :   "30 هزارتومان",
@@ -69,7 +76,17 @@ MLBBPrices = {
             
             }
 
+for prod, price in MLBBPrices.items():
+    insert_PRODUCT_data(1,prod, price)
 
+
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+
+insert_GAMESECTION_data(2, "Call of duty Mobile", "Activision")
 CODMPrices = {
 
             "80 CP"     :    "80 هزارتومان",
@@ -81,8 +98,17 @@ CODMPrices = {
             "Pack Price":    "400 هزارتومان"
 
             }
+for prod, price in CODMPrices.items():
+    insert_PRODUCT_data(2, prod, price)
 
 
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+
+
+insert_GAMESECTION_data(3, "Clash of Clans", "Supercell")
 COCPrices = {
 
         "80 COC Gems"   :   "90 هزارتومان",
@@ -94,8 +120,16 @@ COCPrices = {
         "Golden pass"   :   "700 هزارتومان"
 }
 
+for prod, price in COCPrices.items():
+    insert_PRODUCT_data(3, prod, price)
 
 
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+
+insert_GAMESECTION_data(4, "Clash Royale", "Supercell")
 CRPrices = {
 
     "80 CR Gems"    :   "100 هزارتومان",
@@ -107,6 +141,8 @@ CRPrices = {
     "Diamond Pass"  :   "1.090 هزارتومان"
 }
 
+for prod, price in CRPrices.items():
+    insert_PRODUCT_data(4, prod, price)
 
 
 #-------------------------------------------------------------------------------
@@ -135,7 +171,8 @@ commands = {
 admincommands = {
 
     'startchatwith'            :    "پیام از طریق ربات به یک کاربر با استفاده از آیدی عددی اون کاربر",
-
+    'addproduct'               :    "اضافه کردن محصول",
+    'removeproduct'            :    "حذف کردن محصول",
 }
 
 
@@ -149,9 +186,9 @@ admincommands = {
 
 def listener(messages):
     for m in messages:
-        print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type:{m.content_type}, Message:\n{m.text}\n")
-        os.makedirs(os.path.join('Data', str(m.chat.id)), exist_ok=True)
-
+        if m.content_type == "text":
+            print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type:{m.content_type}, Message:\n{m.text}\n")
+            os.makedirs(os.path.join('Data', str(m.chat.id)), exist_ok=True)
 
 bot.set_update_listener(listener)
 
@@ -182,6 +219,19 @@ def delete_message(*args, **kwargs):
         return antiflood(bot.delete_message, *args, **kwargs)
     except Exception as e:
         logging.exception(f'error in delete message, error: {e}')
+
+def edit_message_caption(*args, **kwargs):
+    try:
+        return antiflood(bot.edit_message_caption, *args, **kwargs)
+    except Exception as e:
+        logging.exception(f'error in edit message caption, error: {e}')
+
+def edit_message_reply_markup(*args, **kwargs):
+    try:
+        return antiflood(bot.edit_message_reply_markup, *args, **kwargs)
+    except Exception as e:
+        logging.exception(f'error in edit message reply markup, error: {e}')
+
 
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -221,25 +271,29 @@ def callback_handler(call):
         
 
         elif section == "mainpage":
-            try:
-                delete_message(cid, mid)
-            except Exception:
-                bot.answer_callback_query(call_id, "عملیات معتبر نمیباشد!")
+            delete_message(cid, mid)
             mainpage(call.message)
 
 
         elif section == "contactadmin":
             command_contact_admin_handler(call.message)
     
+
+                #   InlineKeyboardButton("انصراف و بازگشت", callback_data= "CallOfDutyMobile"))
+        elif section == "MLBB":
+            game_MLBB_section(call.message)
+        elif section == "CallOfDutyMobile":
+            game_CallOfDutyMobile_section(call.message)
+        elif section == "ClashOfClans":
+            game_ClashOfClans_section(call.message)
+        elif section == "ClashRoyale":
+            game_ClashRoyale_section(call.message)
+
     elif data.split("_")[0] == "confirmed":
 
         if data.split("_")[1] == "order":
             orderid = int(data.split("_")[-2])
             userid = int(data.split("_")[-1])
-            
-    # keyboard.add(InlineKeyboardButton("قبول کردن سفارش", callback_data= f"confirmed_order_{cid}"))
-    # keyboard.add(InlineKeyboardButton("رد کردن سفارش", callback_data= f"rejected_order_{cid}"))
-# orders.setdefault(cid,{orderid : {'admin' : None, 'userdata' : {'email' : None, 'password' : None},'cost' : None, 'service' : None}})
             adminID = call.from_user.id
 
             if adminID in adminlist:
@@ -252,14 +306,13 @@ def callback_handler(call):
                 keyboard = InlineKeyboardMarkup()
                 keyboard.add(InlineKeyboardButton(f"تایید شده توسط ادمین {call.from_user.username}✅", callback_data= "nothing"))
                 keyboard.add(InlineKeyboardButton(f"تکمیل سفارش با موفقیت انجام شد", callback_data= f"finishedorder_{orderid}"))
-                bot.edit_message_reply_markup(cid,mid, reply_markup= keyboard)
+                edit_message_reply_markup(cid,mid, reply_markup= keyboard)
             else:
                 bot.answer_callback_query(call_id, "شما ادمین ربات نیستید!")
             
         
         elif data.split("_")[1] == "game": #userstep continue_on_ordering_service
-            #    keyboard.add(InlineKeyboardButton("تایید و ادامه", callback_data= f"confirmed_game_COD_{service}"),
-            bot.edit_message_reply_markup(cid,mid, reply_markup= None)
+            edit_message_reply_markup(cid,mid, reply_markup= None)
             game = data.split("_")[2]
             orderid = int(cid) + int(time.time())
             keyboard = InlineKeyboardMarkup()
@@ -292,12 +345,32 @@ def callback_handler(call):
     
             usersteps[cid] = "continue_on_ordering_service"
     
+        elif data.split("_")[1] == "delete":
+            choice = data.split("_")[2]
+            if choice == "product":
+                bot.answer_callback_query(call_id, "در حال حذف✅...")
+                prodid = data.split("_")[-1]
+                bot.send_chat_action(cid, "typing")
+                time.sleep(2)
+                try:
+                    delete_PRODUCT_data(prodid)
+                    logging.info(f"Product number {prodid} was proceed to be deleted from database.")
+                except Exception as e:
+                    send_message(cid, f"حذف کردن محصول به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
+                else:
+                    send_message(cid, f"محصول آیدی {prodid} با موفقیت حذف شد.")
+                    edit_message_reply_markup(cid, mid, reply_markup= None)
+
+
+
     elif data.split("_")[0] == "change":
         if data.split("_")[1] == "acc":
             keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add("تغییر شماره تلفن", "تغییر ایمیل")
             send_message(cid, "کدوم یکی رو میخواید تغییر بدید؟", reply_markup= keyboard)
             
+
+
     elif data.split("_")[0] == "finishedorder":
         adminID = call.from_user.id
         userid = adminlist[adminID]['order']['order_for_userid']
@@ -311,13 +384,23 @@ def callback_handler(call):
                 send_message(userid, f"سفارش شماره {orderid} شما تکمیل شد. با تشکر از خرید شما❤")
                 keyboard = InlineKeyboardMarkup()
                 keyboard.add(InlineKeyboardButton(f"توسط ادمین {call.from_user.username} با موفقیت به اتمام رسید✅", callback_data= "nothing"))
-                bot.edit_message_reply_markup(cid,mid, reply_markup= keyboard)
-                adminlist[adminID]['acceptedorders'] += 1
+                edit_message_reply_markup(cid,mid, reply_markup= keyboard)
+                adminlist[adminID]['acceptedorders'] += 1 
+                update_ADMIN_orderscount(adminID, adminlist[adminID]['acceptedorders'])
+
                 adminlist[adminID]['order']['active_order'] = False
                 adminlist[adminID]['order']['order_for_userid'] = None
                 adminlist[adminID]['order']['orderid'] = None
+                productID = get_PRODUCT_data_by_name(orders[userid][-1][orderid]['service'])
+                transactionphoto = usertempdata[userid]
+                insert_ORDERS_data(orderid, transactionphoto, userid, adminID, productID['ID'], datetime.datetime.today())
                 orders.pop(userid)
-                userdata[userid]['orderscount'] += 1
+                custdata = get_CUSTOMER_data(userid)
+                orderscount = custdata['ORDERSCOUNT']
+                orderscount += 1
+                usersteps.pop(userid)
+                update_CUSTOMER_orderscount(userid, orderscount )
+                logging.info(f"Order id {orderid} was successfull from admin {adminID}")
             else:
                 bot.answer_callback_query(call_id, "شما این سفارش رو قبول نکردید.")
         else:
@@ -338,81 +421,104 @@ def callback_handler(call):
                 if reason == "wrongsentamount":
                     keyboard.add(InlineKeyboardButton(f"رد شده توسط ادمین {call.from_user.username}❌", callback_data= "nothing"))
                     keyboard.add(InlineKeyboardButton(f"دلیل: مقدار واریزی اشتباه", callback_data= "nothing"))
-                    bot.edit_message_reply_markup(cid,mid, reply_markup= keyboard)
+                    edit_message_reply_markup(cid,mid, reply_markup= keyboard)
                     send_message(userid, clean_text(f"سفارش شماره `{orderid}` شما رد شد.\nدلیل رد سفارش شما مقدار واریز شده ی اشتباه بوده. اگر فکر میکنید مقدار واریزی درست بوده با پشتیبانی تماس بگیرید: /contact_admin"), parse_mode= "MarkdownV2")
+                    logging.info(f"Order number {orderid} was rejected by admin {adminID} from user {userid} for reason: {reason}")
+
 
                 elif reason == "faketrphoto":
                     keyboard.add(InlineKeyboardButton(f"رد شده توسط ادمین {call.from_user.username}❌", callback_data= "nothing"))
                     keyboard.add(InlineKeyboardButton(f"دلیل: رسید واریزی فیک", callback_data= "nothing"))
-                    bot.edit_message_reply_markup(cid,mid, reply_markup= keyboard)
+                    edit_message_reply_markup(cid,mid, reply_markup= keyboard)
                     send_message(userid, clean_text(f"سفارش شماره `{orderid}` شما رد شد.\nرسید ارسالی شما مورد تایید ادمین ها نبود. اگر فکر میکنید اشتباهی پیش اومده با پشتیبانی تماس بگیرید: /contact_admin"), parse_mode= "MarkdownV2")
+                    logging.info(f"Order number {orderid} was rejected by admin {adminID} from user {userid} for reason: {reason}")
+
 
                 elif reason == "wronginfo":
                     keyboard.add(InlineKeyboardButton(f"رد شده توسط ادمین {call.from_user.username}❌", callback_data= "nothing"))
                     keyboard.add(InlineKeyboardButton(f"دلیل: اطلاعات اکانت اشتباه هست", callback_data= "nothing"))
-                    bot.edit_message_reply_markup(cid,mid, reply_markup= keyboard)
+                    edit_message_reply_markup(cid,mid, reply_markup= keyboard)
                     send_message(userid, clean_text(f"سفارش شماره `{orderid}` شما رد شد.\nاطلاعات وارد شده برای اکانت اشتباه هستند. اگر فکر میکنید اطلاعات درست ثبت شدن با پشتیبانی تماس بگیرید: /contact_admin"), parse_mode= "MarkdownV2")
+                    logging.info(f"Order number {orderid} was rejected by admin {adminID} from user {userid} for reason: {reason}")
+
+
             else:
                 bot.answer_callback_query(call_id, "شما ادمین ربات نیستید!")
     
     
-    # keyboard.add(InlineKeyboardButton("پاسخ به ادمین", callback_data= f"reply_admin_to_user_{cid}"))
-    # keyboard.add(InlineKeyboardButton("علامت زدن به عنوان خوانده شده", callback_data= f"user_seen_message_admin_{mid}_{cid}"))
 
-
+# keyboard.add(InlineKeyboardButton(f"پاسخ به کاربر @{message.chat.username}", callback_data= f"reply_admin_to_user_{cid}_{mid}"))
     elif data.split("_")[0] == "reply":
         adminID = call.from_user.id
-        userid = int(data.split("_")[-1])
+        userid = data.split("_")[-2]
+        usermessageid = data.split("_")[-1]
         if usertempdata.get(adminID):
             usertempdata.pop(adminID)
             usertempdata.setdefault(adminID, {})
         else:
             usertempdata.setdefault(adminID, {})
-        usertempdata[adminID]['userid'] = userid
-        usertempdata[adminID]['usermessageid'] = usertempdata[userid]['messageid']
+
+        usertempdata[adminID]['userid'] = int(userid)
+        usertempdata[adminID]['usermessageid'] = (usermessageid)
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton(f"درحال پاسخ توسط ادمین @{call.from_user.username}", callback_data= "nothing"))
-        bot.edit_message_reply_markup(cid,mid, reply_markup= keyboard)
+        edit_message_reply_markup(cid,mid, reply_markup= keyboard)
         send_message(adminID, "لطفا پیام ارسالی خودتون به کاربر رو ارسال کنید.")
         usersteps[adminID] = "send admin message to user"
 
 
+    elif data == "nothing":
+        bot.answer_callback_query(call_id, "چیزی برای نمایش دادن نیست!")
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
 
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
 
-
-
-@bot.message_handler(commands= ['start'])#NOT DONE-----***********************************************************************************************
+@bot.message_handler(commands= ['start'])
 def mainpage(message):
     cid = message.chat.id
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(Texts['GamesSectionText'])
     keyboard.add(Texts['ContactAdminText'])
     keyboard.add(Texts['MyAccountInfoText'])
+    keyboard.add(Texts['HelpMenuText'])
     
-    if message.text == "/start":
+
+    if len(message.text.split()) == 2:
+        desired = message.text.split()[-1].split("_")[0]
+        if desired == "startchatwith" and cid in adminlist: #SAMPLE LINK:  ?start=startchatwith_TelegramAccountID
+            userid = message.text.split()[-1].split("_")[-1] 
+            if usertempdata.get(cid):
+                usertempdata.pop(cid)
+                usertempdata.setdefault(cid, {})
+            else:
+                usertempdata.setdefault(cid, {})
+                usertempdata[cid]['userid'] = userid
+            send_message(cid, "لطفا پیامتون رو ارسال کنید")
+            usersteps[cid] = "Get admin message in startchatwith2"
+            return
+        else:
+            send_message(cid, Texts['Send_welcome'], reply_markup= keyboard)
+    else:
         send_message(cid, Texts['Send_welcome'], reply_markup= keyboard)
 
-    elif message.text.split()[-2] == "startchatwith" and cid in adminlist:
-        userid = message.text.split()[-1]
-        #connect_user_withAdmin(message, userid)
-    
+
+
+
 
 @bot.message_handler(commands= ['help'])#DONE-----
 def help_menu(message):
-
     cid = message.chat.id
     text = ""
     for command,desc in commands.items():
         text += f"/{command} : {desc}\n"
     if cid in adminlist:
-        text+= "*************************\nدستورات ادمین:"
+        text+= "\n----------------------------\nدستورات ادمین:\n"
         for acommand, adesc in admincommands.items():
             text += f"/{acommand} : {adesc}\n"    
     send_message(cid, text)
@@ -420,27 +526,31 @@ def help_menu(message):
 @bot.message_handler(commands= ['my_account_info'])#DONE-----entering_account_info_process
 def command_my_account_info_handler(message):
     cid = message.chat.id
-    if cid not in userdata:
-        userdata[cid] = {'email': None, 'phonenumber': None, "user_name": message.chat.first_name, 'orderscount' : 0}
-
-    if userdata[cid]['email'] is None:
+    custdata = get_CUSTOMER_data(cid)
+    if custdata:
+        email = custdata['EMAIL']
+        phone = custdata['PHONE']
+        ordersc = custdata['ORDERSCOUNT']
+        user_name = message.chat.first_name
+        keyboard = InlineKeyboardMarkup()
+        keyboard.add(InlineKeyboardButton("بازگشت به صفحه اصلی", callback_data= "return_mainpage"))
+        keyboard.add(InlineKeyboardButton("تغییر اطلاعات حساب کاربری", callback_data= 'change_acc_info'))
+        text = f"""
+اطلاعات حساب کاربری شما:
+نام کاربری: {user_name}
+شماره تماس: {phone}
+ایمیل: {email}
+تعداد سفارشات شما: {ordersc}
+        """
+        send_message(cid, text, reply_markup= keyboard)
+    
+    
+    
+    
+    else:
         send_message(cid, "لطفا ایمیل خودتون رو برای تکمیل اطلاعات حساب کاربری وارد کنید:", reply_markup = hideboard)
         usersteps[cid] = "entering_account_info_process"
 
-
-    else:
-        keyboard = InlineKeyboardMarkup()
-        keyboard.add(InlineKeyboardButton("بازگشت به صفحه اصلی", callback_data= "return_mainpage"),
-                     InlineKeyboardButton("تغییر اطلاعات حساب کاربری", callback_data= 'change_acc_info'))
-        text = f"""
-اطلاعات حساب کاربری شما:
-نام کاربری: {userdata[cid]['user_name']}
-شماره تماس: {userdata[cid]['phonenumber']}
-ایمیل: {userdata[cid]['email']}
-تعداد سفارشات شما: {userdata[cid]['orderscount']}
-        """
-
-        send_message(cid, text, reply_markup= keyboard)
 
 
 
@@ -461,19 +571,19 @@ def command_games_handler(message):
     send_message(cid, "لطفا بازی مورد نظر خودتون رو انتخاب کنید", reply_markup= keyboard)
 
 
-@bot.message_handler(commands= ['game_MLBB'])#DONE-----
+@bot.message_handler(commands= ['game_mlbb'])#DONE-----
 def command_game_MLBB_handler(message):
     game_MLBB_section(message)
 
-@bot.message_handler(commands= ['game_CallOfDutyMobile'])#DONE-----
+@bot.message_handler(commands= ['game_callofdutymobile'])#DONE-----
 def command_game_CallOfDutyMobile_handler(message):
     game_CallOfDutyMobile_section(message)
     
-@bot.message_handler(commands= ['game_ClashOfClans'])#DONE-----
+@bot.message_handler(commands= ['game_clashofclans'])#DONE-----
 def command_game_ClashOfClans_handler(message):
     game_ClashOfClans_section(message)
 
-@bot.message_handler(commands= ['game_ClashRoyale'])#DONE-----
+@bot.message_handler(commands= ['game_clashroyale'])#DONE-----
 def command_game_ClashRoyale_handler(message):
     game_ClashRoyale_section(message)
 
@@ -483,12 +593,61 @@ def command_game_ClashRoyale_handler(message):
 @bot.message_handler(commands= ['startchatwith'])
 def command_startchatwith_handler(message):
     cid = message.chat.id
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add("بازگشت به صفحه اصلی")
     if cid in adminlist:
-        send_message(cid, "لطفا آیدی کاربر مورد نظر رو وارد کنید:")
+        send_message(cid, "لطفا آیدی کاربر مورد نظر رو وارد کنید:", reply_markup = keyboard)
         usersteps[cid] = "Get admin message in startchatwith"
     else:
         default_handler(message)
 
+
+@bot.message_handler(commands= ['addproduct'])
+def command_addproduct_handler(message):
+    cid = message.chat.id
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add("بازگشت به صفحه اصلی")
+    if cid in adminlist:
+        send_message(cid, "لطفا به فرمت زیر کالای مورد نظر رو اضافه کنید:\nGameID_Productname_Productprice")
+        usersteps[cid] = "Add product data"
+    else:
+        default_handler(message)
+
+
+@bot.message_handler(commands= ['removeproduct'])
+def command_removeproduct_handler(message):
+    cid = message.chat.id
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add("بازگشت به صفحه اصلی")
+    if cid in adminlist:
+        send_message(cid, "لطفا آیدی کالای مورد نظر رو وارد کنید")
+        usersteps[cid] = "Remove product data"
+    else:
+        default_handler(message)
+
+
+
+
+@bot.message_handler(commands= ["add_admin"])
+def command_add_admin_handler(message):
+    cid = message.chat.id
+    if cid == OWNERID:
+        send_message(cid, "لطفا به شکل زیر اطلاعات رو وارد کنید:\nاول آیدی عددی اکانت تلگرام ادمین_شماره تلفن ادمین")
+        usersteps[cid] = "continue on adding admin"
+        
+    else:
+        default_handler(message)
+
+
+
+@bot.message_handler(commands= ['remove_admin'])
+def command_remove_admin_handler(message):
+    cid= message.chat.id
+    if cid == OWNERID:
+        send_message(cid, "لطفا آیدی ادمین مورد نظر رو وارد کنید.")
+        usersteps[cid] = "continue on removing admin"
+    else:
+        default_handler(message)
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -499,7 +658,6 @@ def command_startchatwith_handler(message):
 #return_buttons_handler----DONE
 @bot.message_handler(func = lambda message: message.text.split()[0] == "بازگشت")
 def button_return_handler(message):
-    cid = message.chat.id
     section = message.text.split()[-1]
     if section == "اصلی": #return to mainpage- button text: بازگشت به صفحه اصلی
         mainpage(message)
@@ -518,6 +676,10 @@ def button_contact_admin_handler(message):
 def button_games_handler(message):
     command_games_handler(message)
 
+@bot.message_handler(func= lambda message: message.text == Texts['HelpMenuText'])
+def button_helpmenu_handler(message):
+    help_menu(message)
+
 
 #change_acc_info----DONE
 @bot.message_handler(func= lambda message: message.text.split()[0] ==  "تغییر")#userstep_B_C
@@ -527,10 +689,12 @@ def button_change_my_acccount_information(message):
     if message.text.split()[1] == "ایمیل":
         send_message(cid, "لطفا ایمیل جدیدتون رو وارد کنید")
         usersteps[cid] = "change_accinfo_email"
+
     elif message.text.split()[2] == "تلفن":
         keyboard.add(KeyboardButton("ثبت شماره تلفن", request_contact= True))
         send_message(cid, "لطفا شماره تماس جدید خودتون رو از طریق دکمه ی زیر ثبت کنید", reply_markup= keyboard)
         usersteps[cid] = "change_accinfo_phonenumber"
+
     else:
         command_my_account_info_handler(message)
 
@@ -539,45 +703,122 @@ def button_change_my_acccount_information(message):
 @bot.message_handler(func= lambda message: message.text == ("Mobile Legends"))#"MLBB_selectproduct_process"
 def game_MLBB_section(message):
     cid = message.chat.id
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add("50 Diamonds", "150 Diamonds", "250 Diamonds", "500 Diamonds")
-    keyboard.add("1000 Diamonds", "1500 Diamonds", "2000 Diamonds")
-    keyboard.add("2500 Diamonds", "4000 Diamonds", "5000 Diamonds")
-    keyboard.add("بازگشت به صفحه اصلی")
+    if get_CUSTOMER_data(cid):    
+        products = get_ALLPRODUCT_data_in_GAMESECTION(1)
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        prods = []
+        i = 0
+        for prod in products:
+            prodname = prod['PROD_NAME']
+            prods.append(prodname)
+            i += 1
+            if i == 3:
+                keyboard.add(*prods)
+                i = 0
+                if prods:
+                    prods.clear()
 
-    send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
-    usersteps[cid] = "MLBB_selectproduct_process"
+        if prods:
+            keyboard.add(*prods)
+
+
+        keyboard.add("بازگشت به صفحه اصلی")
+        send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
+        usersteps[cid] = "MLBB_selectproduct_process"
+    else:
+        bot.send_message(cid, "برای ثبت سفارش باید اول اطلاعات اکانتتون رو کامل کنید.")
+        command_my_account_info_handler(message)
 
 @bot.message_handler(func= lambda message: message.text.startswith("Call of Duty Mobile"))#CODM_selectproduct_process
 def game_CallOfDutyMobile_section(message):
     cid = message.chat.id
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add("80 CP", "420 CP", "880 CP", "2400 CP")
-    keyboard.add("5000 CP", "10800 CP", "Pack Price", "بازگشت به صفحه اصلی")
-    send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
-    usersteps[cid] = "CODM_selectproduct_process"
+    if get_CUSTOMER_data(cid):    
+        products = get_ALLPRODUCT_data_in_GAMESECTION(2)
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        prods = []
+        i = 0
+        for prod in products:
+            prodname = prod['PROD_NAME']
+            prods.append(prodname)
+            i += 1
+            if i == 3:
+                keyboard.add(*prods)
+                i = 0
+                if prods:
+                    prods.clear()
+
+        if prods:
+            keyboard.add(*prods)
+
+
+        keyboard.add("بازگشت به صفحه اصلی")
+        send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
+        usersteps[cid] = "CODM_selectproduct_process"
+    else:
+        bot.send_message(cid, "برای ثبت سفارش باید اول اطلاعات اکانتتون رو کامل کنید.")
+        command_my_account_info_handler(message)
 
 
 @bot.message_handler(func= lambda message: message.text.startswith("Clash Of Clans"))#COC_selectproduct_process
 def game_ClashOfClans_section(message):
     cid = message.chat.id
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add("80 COC Gems", "500 COC Gems", "1200 COC Gems")
-    keyboard.add("6500 COC Gems", "14000 COC Gems", "2500 COC Gems")
-    keyboard.add("Golden pass", "بازگشت به صفحه اصلی")
-    send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
-    usersteps[cid] = "COC_selectproduct_process"
+    if get_CUSTOMER_data(cid):    
+        products = get_ALLPRODUCT_data_in_GAMESECTION(3)
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        prods = []
+        i = 0
+        for prod in products:
+            prodname = prod['PROD_NAME']
+            prods.append(prodname)
+            i += 1
+            if i == 3:
+                keyboard.add(*prods)
+                i = 0
+                if prods:
+                    prods.clear()
+
+        if prods:
+            keyboard.add(*prods)
+
+
+        keyboard.add("بازگشت به صفحه اصلی")
+        send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
+        usersteps[cid] = "COC_selectproduct_process"
+    else:
+        bot.send_message(cid, "برای ثبت سفارش باید اول اطلاعات اکانتتون رو کامل کنید.")
+        command_my_account_info_handler(message)
 
 
 @bot.message_handler(func= lambda message: message.text.startswith("Clash Royale"))#CR_selectproduct_process
 def game_ClashRoyale_section(message):
     cid = message.chat.id
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add("80 CR Gems", "500 CR Gems", "1200 CR Gems")
-    keyboard.add("6500 CR Gems", "14000 CR Gems", "2500 CR Gems")
-    keyboard.add("Other offers", "بازگشت به صفحه اصلی")
-    send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
-    usersteps[cid] = "CR_selectproduct_process"
+    if get_CUSTOMER_data(cid):    
+        products = get_ALLPRODUCT_data_in_GAMESECTION(4)
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        prods = []
+        i = 0
+        for prod in products:
+            prodname = prod['PROD_NAME']
+            prods.append(prodname)
+            i += 1
+            if i == 3:
+                keyboard.add(*prods)
+                i = 0
+                if prods:
+                    prods.clear()
+
+        if prods:
+            keyboard.add(*prods)
+
+
+        keyboard.add("بازگشت به صفحه اصلی")
+        send_message(cid, Texts['GameMessage1'], reply_markup= keyboard)
+        usersteps[cid] = "CR_selectproduct_process"
+    else:
+        bot.send_message(cid, "برای ثبت سفارش باید اول اطلاعات اکانتتون رو کامل کنید.")
+        command_my_account_info_handler(message)
+
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -585,21 +826,17 @@ def game_ClashRoyale_section(message):
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 
+
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "send user message from support to admin group")
 def send_user_message_to_admin_group(message):
     cid = message.chat.id
     mid = message.message_id
-    senttext = f"""پیام ارسال شده از: @{message.chat.username}\n*{message.text}*"""
+    senttext = f"پیام ارسال شده از: @{message.chat.username}\n*{message.text}*"
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(f"پاسخ به کاربر @{message.chat.username}", callback_data= f"reply_admin_to_user_{cid}"))
+    keyboard.add(InlineKeyboardButton(f"پاسخ به کاربر @{message.chat.username}", callback_data= f"reply_admin_to_user_{cid}_{mid}"))
     send_message(ADMINGROUP, clean_text(senttext), reply_markup = keyboard, parse_mode = "MarkdownV2")
     send_message(cid, "پیام شما با موفقیت ارسال شد. تا پاسخ ادمین ها به پیامتون صبور باشید.", reply_to_message_id = mid)
-    if usertempdata.get(cid):
-        usertempdata.pop(cid)
-        usertempdata.setdefault(cid, {})    
-    else:
-        usertempdata.setdefault(cid, {})
-    usertempdata[cid]['messageid'] = mid
+
 
 
 
@@ -608,6 +845,7 @@ def send_user_message_to_admin_group(message):
 @bot.message_handler(func = lambda message: usersteps.get(message.chat.id) == "entering_account_info_process")
 def step_entering_account_info_process_handler(message):
     cid = message.chat.id
+    userdata.setdefault(cid, {})
     userdata[cid]['email'] = message.text
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(KeyboardButton("به اشتراک گذاری شماره تلفن", request_contact= True))
@@ -615,19 +853,19 @@ def step_entering_account_info_process_handler(message):
     send_message(cid, "لطفا شماره تماس خودتون رو با استفاده از دکمه ی زیر ارسال کنید", reply_markup= keyboard)
 
 
+
+
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "change_accinfo_email")
 def step_change_accinfo_email_handler(message):
     cid = message.chat.id
-    userdata[cid]['email'] = message.text
+    newemail = message.text
+    logging.info(f"user {cid} changed their email. Old email: {get_CUSTOMER_data(cid)['EMAIL']} - New: {newemail}")
+    update_CUSTOMER_email(cid, newemail)
     send_message(cid, "ایمیل شما ثبت شد.")
+    usersteps.pop(cid)
     command_my_account_info_handler(message)
 
 
-@bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "change_accinfo_phonenumber")
-def step_change_accinfo_phonenumber_handler(message):
-    cid = message.chat.id
-    send_message(cid, "شماره تلفن شما با موفقیت تغییر کرد.")
-    command_my_account_info_handler(message)
 
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -643,17 +881,15 @@ def step_MLBB_selectproduct_process_handler(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("تایید و ادامه", callback_data= f"confirmed_game_MLBB_{service}"),
                   InlineKeyboardButton("انصراف و بازگشت", callback_data= "return_MLBB_section"))
-    if service.split()[1] == "Diamonds":
-        send_message(cid, f'''نام محصول: Diamonds"
-    {service.split()[0]}:تعداد الماس 
-    هزینه:{MLBBPrices[f'{service}']}
-        تایید میکنید؟''', reply_markup= keyboard)
 
-    else:
-        text = f'''نام محصول: {service}"
-    هزینه:{MLBBPrices[f'{service}']}
-        تایید میکنید؟'''
-        send_message(cid, text, reply_markup = keyboard)
+    text = f'''نام محصول: {service}
+هزینه:{MLBBPrices[f'{service}']}
+تایید میکنید؟'''
+    
+    usersteps.pop(cid)
+    send_message(cid, text, reply_markup = keyboard)
+
+
 
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "CODM_selectproduct_process")
 def step_F_handler(message):
@@ -662,18 +898,13 @@ def step_F_handler(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("تایید و ادامه", callback_data= f"confirmed_game_COD_{service}"),
                   InlineKeyboardButton("انصراف و بازگشت", callback_data= "return_CallOfDutyMobile_section"))
-    if service.split()[1] == "CP":
-
-        send_message(cid, f'''نام محصول: CP
-تعداد: {service.split()[0]} CP
-هزینه: {CODMPrices[f'{service}']}
-تایید میکنید؟''', reply_markup= keyboard)
-    
-    else:
-        text = f'''نام محصول: {service}
+    text = f'''نام محصول: {service}
 هزینه: {CODMPrices[f'{service}']}
 تایید میکنید؟'''
-        send_message(cid, text, reply_markup = keyboard)
+    
+    usersteps.pop(cid)
+    send_message(cid, text, reply_markup = keyboard)
+
 
 
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "COC_selectproduct_process")
@@ -683,19 +914,14 @@ def step_G_handler(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("تایید و ادامه", callback_data= f"confirmed_game_COC_{service}"),
                   InlineKeyboardButton("انصراف و بازگشت", callback_data= "return_ClashOfClans_section"))
-    if service.split()[-1] == "Gems":
-        send_message(cid, f'''
-        نام محصول: Gem"
-        {service.split()[0]}:تعداد Gem 
-        هزینه:{COCPrices[f'{service}']}
-            تایید میکنید؟''', reply_markup= keyboard)
-    else:
-        text = f'''
-        نام محصول: Gem"
-        {service.split()[0]}:تعداد Gem 
-        هزینه:{COCPrices[f'{service}']}
-            تایید میکنید؟'''
-        send_message(cid, text, reply_markup = keyboard)
+    text = f'''
+نام محصول: {service}
+هزینه: {COCPrices[f'{service}']}
+تایید میکنید؟'''
+    
+    usersteps.pop(cid)
+    send_message(cid, text, reply_markup = keyboard)
+
 
 
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "CR_selectproduct_process")
@@ -705,27 +931,21 @@ def step_H_handler(message):
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("تایید و ادامه", callback_data= f"confirmed_game_CR_{service}"),
                   InlineKeyboardButton("انصراف و بازگشت", callback_data= "return_ClashRoyale_section"))
-    if service.split()[-1] == "Gems":
-        send_message(cid, f'''
-        نام محصول: Gem"
-        {service.split()[0]}:تعداد Gem 
-        هزینه:{CRPrices[f'{service}']}
-            تایید میکنید؟''', reply_markup= keyboard)
-
-    else:
-        text = f'''
-        نام محصول: Gem"
-        {service.split()[0]}:تعداد Gem 
-        هزینه:{CRPrices[f'{service}']}
-            تایید میکنید؟'''
+    text = f'''
+نام محصول: {service}
+هزینه: {CRPrices[f'{service}']}
+تایید میکنید؟'''
         
-        send_message(cid, text, reply_markup = keyboard)
+    usersteps.pop(cid)
+    send_message(cid, text, reply_markup = keyboard)
 
 
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
+
 
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue_on_ordering_service")
 def step_continue_on_ordering_service_handler(message):
@@ -746,15 +966,17 @@ def step_continue_on_ordering_serviceB_handler(message):
     cid = message.chat.id
     orderid = usertempdata[cid]
     orders[cid][-1][orderid]['userdata']['password'] = message.text
+    custdata = get_CUSTOMER_data(cid)
+    phonenumber = custdata['PHONE']
     text = f"""
 اطلاعات سفارش شما:
 ایمیل ثبت شده: {orders[cid][-1][orderid]['userdata']['email']}
-شماره تلفن ثبت شده جهت تماس توسط ادمین (بعد از ثبت سفارش حتما در دسترس باشید): +{userdata[cid]['phonenumber']}
+شماره تلفن ثبت شده جهت تماس توسط ادمین (بعد از ثبت سفارش حتما در دسترس باشید): +{phonenumber}
 شماره سفارش: {orderid}
 پسورد ثبت شده: {orders[cid][-1][orderid]['userdata']['password']}
 محصول: {orders[cid][-1][orderid]['service']}
 هزینه: {orders[cid][-1][orderid]['cost']}"""
-
+    logging.info(f"Order for user {cid} is proceeding...\nOrder info: {orders[cid]}---ID: {orderid}")
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("لغو پرداخت و بازگشت به صفحه اصلی", callback_data= "return_canceled"))
     send_message(cid, text)
@@ -772,12 +994,15 @@ def step_continue_on_ordering_serviceB_handler(message):
 def step_transaction_screenshot_handler(message):
     cid = message.chat.id
     orderid = usertempdata[cid]['orderid']
+    custdata = get_CUSTOMER_data(cid)
+    phonenumber = custdata['PHONE']
+    orderscount = custdata['ORDERSCOUNT']
     text = f"""
 اطلاعات سفارش کاربر \n@{message.chat.username} / {message.chat.first_name}:
 آیدی عددی کاربر: `{cid}`
-تعداد سفارشات ثبت شده توسط این کاربر: {userdata[cid]['orderscount']}
+تعداد سفارشات ثبت شده توسط این کاربر: {orderscount}
 ایمیل ثبت شده: `{orders[cid][-1][orderid]['userdata']['email']}`
-شماره تلفن ثبت شده جهت تماس توسط ادمین: `+{userdata[cid]['phonenumber']}`
+شماره تلفن ثبت شده جهت تماس توسط ادمین: `+{phonenumber}`
 پسورد ثبت شده: `{orders[cid][-1][orderid]['userdata']['password']}`
 محصول: {orders[cid][-1][orderid]['service']}
 هزینه: {clean_text(orders[cid][-1][orderid]['cost'])}"""     
@@ -789,23 +1014,25 @@ def step_transaction_screenshot_handler(message):
     keyboard.add(InlineKeyboardButton("رد کردن سفارش \ اطلاعات اشتباه", callback_data= f"rejected_order_wronginfo_{orderid}_{cid}"))
     keyboard.add(InlineKeyboardButton("رد کردن سفارش \ رسید واریزی فیک", callback_data= f"rejected_order_faketrphoto_{orderid}_{cid}"))
     keyboard.add(InlineKeyboardButton("رد کردن سفارش \ مبلغ واریزی نادرست", callback_data= f"rejected_order_wrongsentamount_{orderid}_{cid}"))
-    with open(f"{os.path.join('Data', str(cid), str(userdata.get(cid)['orderscount']))}.{usertempdata.get(cid)[orderid]}", 'rb') as f:
+    filename = f"{str(orderid)}.{usertempdata.get(cid)[orderid]}"
+    if usertempdata.get(cid):
+        usertempdata.pop(cid)
+        usertempdata.setdefault(cid, {})
+    else:
+        usertempdata.setdefault(cid, {})
+    usertempdata[cid] = filename
+    with open(os.path.join('Data', str(cid), filename), 'rb') as f:
         bot.send_photo(ADMINGROUP, f, caption= text , reply_markup= keyboard, parse_mode= "MarkdownV2")
     send_message(cid, "لطفا تا تایید سفارشتون توسط ادمین ها صبور باشید. پس از تایید سفارش به هیچ وجه داخل اکانتتون نرید!", reply_markup = hideboard)
 
 
 
-
-
-
-
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-
 
 
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "Get admin message in startchatwith")
@@ -830,19 +1057,119 @@ def step_Get_admin_message_in_startchatwith_handler(message):
 def step_Get_admin_message_in_startchatwith2_handler(message):
     cid = message.chat.id
     userid = usertempdata[cid]['userid']
-    adminid = cid + userid
-
+    usermessage = message.text
     adminmessage = clean_text(f"""
-    شما پیامی از ادمین ها دارید:
+شما پیامی از ادمین ها دارید:
                               
-    *{clean_text(message.text)}*
+*{clean_text(usermessage)}*
 
-    برای پاسخ به پشتیبانی پیام بدید.
+برای پاسخ به پشتیبانی پیام بدید.
 """)
     
     send_message(userid, adminmessage, parse_mode = "MarkdownV2")
     send_message(cid, "پیام شما در صورت درست بودن اطلاعات ارسال خواهد شد.")
-    send_message(ADMINGROUP, f"ادمین @{message.chat.username} پیامی به کاربر ارسال کرد. محتوای پیام:\n{adminmessage}")
+    send_message(ADMINGROUP, clean_text(f"ادمین {message.chat.first_name} / @{message.chat.username} پیامی به کاربر `{userid}` ارسال کرد. محتوای پیام:\n*{usermessage}*"), parse_mode = "MarkdownV2")
+    usersteps.pop(cid)
+
+
+
+@bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "Add product data")
+def step_Add_product_data_handler(message):
+    cid = message.chat.id
+    productinfo = message.text
+    prodgamesec = productinfo.split("_")[0]
+    productname = productinfo.split("_")[1]
+    productprice= f"{productinfo.split('_')[2]} هزارتومان"
+    
+    try:
+        if prodgamesec == "1":
+            MLBBPrices[productname] = productprice
+            prodgamesection = "Mobile Legends"
+        elif prodgamesec == "2":
+            CODMPrices[productname] = productprice
+            prodgamesection = "Call Of Duty Mobile"
+        elif prodgamesec == "3":
+            COCPrices[productname] = productprice
+            prodgamesection = "Clash Of Clans"
+        elif prodgamesec == "4":
+            CRPrices[productname] = productprice
+            prodgamesection = "Clash Royale"
+
+        prodid = insert_PRODUCT_data(prodgamesec, productname, productprice)
+
+
+    except Exception as e:
+        bot.send_message(cid, f"اضافه کردن محصول به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
+    else:
+        bot.send_message(cid, f"محصول {productname} با موفقیت اضافه شد. اطلاعات محصول:\nنام: {productname}\nقیمت: {productprice}\nدر دسته بازی: {prodgamesection}\nآیدی محصول: {prodid}")
+        usersteps.pop(cid)
+
+
+@bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "Remove product data")
+def step_Remove_product_data_handler(message):
+    cid = message.chat.id
+    prodid = message.text
+    try:
+        productinfo = get_PRODUCT_data_by_id(prodid)
+        prodname = productinfo['PROD_NAME']
+        prodprice = productinfo['PROD_PRICE']
+    except TypeError:
+        send_message(cid, "لطفا از صحیح بودن آیدی محصول اطمینان حاصل کنید. آیدی محصول برای مثال: 32")
+    except Exception as e:
+        send_message(cid, f"حذف کردن محصول به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
+    else:
+        keyboard = InlineKeyboardMarkup()
+        keyboard.add(InlineKeyboardButton("تایید و حذف محصول", callback_data= f"confirmed_delete_product_{prodid}"))
+        keyboard.add(InlineKeyboardButton("لغو و بازگشت به صفحه اصلی", callback_data= "return_mainpage" ))
+        send_message(cid, f"از حذف کردن محصول با اطلاعات زیر اطمینان دارید؟\nنام: {prodname}\nقیمت:{prodprice}\nآیدی محصول:{prodid}", reply_markup= keyboard)
+        usersteps.pop(cid)
+
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+
+
+@bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue on adding admin")
+def step_continue_on_adding_admin_handler(message):
+    cid = message.chat.id
+    logging.info(f"Admin is proceeding to add a new admin")
+    admininfo = message.text.split("_")
+    adminid = admininfo[0]
+    adminphonenumber = admininfo[1]
+    try:
+        insert_ADMIN_data(adminid,adminphonenumber)
+        adminlist[int(adminid)] = {'acceptedorders': 0, 'phonenumber' : str(adminphonenumber), "order" : {'active_order' : False, 'order_for_userid' : None, 'orderid' : None}}
+    except Exception as e:
+        send_message(cid, f"اضافه کردن ادمین به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
+    else:
+        send_message(cid, f"ادمین با آیدی {adminid} با موفقیت به لیست ادمین ها اضافه شد و به ربات دسترسی خواهد داشت.\nدر صورتی که میخواستید ادمین رو حذف کنید از /remove_admin استفاده کنید.")
+        usersteps.pop(cid)
+
+
+@bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue on removing admin")
+def step_continue_on_removing_admin_handler(message):
+    cid = message.chat.id
+    adminid = int(message.text)
+    if int(adminid) == OWNERID:
+        send_message(cid, "حذف کردن مالک ممکن نمیباشد.")
+    else:
+        try:
+            delete_ADMIN_data(int(adminid))
+            adminlist.pop(int(adminid))
+        except Exception as e:
+            print(e)
+            send_message(cid, f"حذف کردن ادمین به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
+        else:
+            send_message(cid, clean_text(f"ادمین با آیدی `{adminid}` با موفقیت از لیست ادمین ها حذف شد."), parse_mode = "MarkdownV2")
+            usersteps.pop(cid)
+            
+
+
 
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -866,7 +1193,7 @@ def step_send_admin_message_to_user_handler(message):
     userid = usertempdata[cid]['userid']
     send_message(userid, adminmessage, reply_to_message_id = mid, parse_mode = "MarkdownV2")
     send_message(cid, "پیام شما با موفقیت ارسال شد.")
-
+    usersteps.pop(cid)
 
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -880,16 +1207,37 @@ def step_send_admin_message_to_user_handler(message):
 @bot.message_handler(content_types=['contact'])
 def content_contact_handler(message):
     cid = message.chat.id
-    userdata[cid]['phonenumber'] = message.contact.phone_number
     if message.contact.user_id == cid:
-        keyboard = InlineKeyboardMarkup()
-        keyboard.add(InlineKeyboardButton("تایید و بازگشت", callback_data= "return_mainpage"),
-                    InlineKeyboardButton("تغییر اطلاعات", callback_data= "change_acc_info"))
         if usersteps[cid] == "change_accinfo_phonenumber":
-            step_change_accinfo_phonenumber_handler(message)
+            Phonenumber = message.contact.phone_number
+            logging.info(f"User id {cid} changed the phone number. Old: {get_CUSTOMER_data(cid)['PHONE']} -- New: {Phonenumber}")
+            update_CUSTOMER_phonenumber(cid, Phonenumber)
+            send_message(cid, "شماره تلفن شما با موفقیت تغییر کرد.")
+            usersteps.pop(cid)
+            command_my_account_info_handler(message)
+
             
         else:
-            send_message(cid, f"اطلاعات شما با موفقیت ثبت شد. در صورتی که میخواستید اطلاعات ثبت شده رو تغییر بدید روی دکمه ی زیر کلیک کنید.\nاطلاعات:\nشماره تلفن: {userdata[cid]['phonenumber']}\nجیمیل: {userdata[cid]['email']}", reply_markup= keyboard)
+            userdata[cid]['phonenumber'] = message.contact.phone_number
+            send_message(cid, f"اطلاعات شما با موفقیت ثبت شد. در صورتی که میخواستید اطلاعات ثبت شده رو تغییر بدید روی دکمه ی زیر کلیک کنید.")
+            insert_CUSTOMER_data(cid, userdata[cid]['phonenumber'], userdata[cid]['email'])
+            custdata = get_CUSTOMER_data(cid)
+            if custdata:
+                email = custdata['EMAIL']
+                phone = custdata['PHONE']
+                ordersc = custdata['ORDERSCOUNT']
+                user_name = message.chat.first_name
+                keyboard = InlineKeyboardMarkup()
+                keyboard.add(InlineKeyboardButton("بازگشت به صفحه اصلی", callback_data= "return_mainpage"))
+                keyboard.add(InlineKeyboardButton("تغییر اطلاعات حساب کاربری", callback_data= 'change_acc_info'))
+                text = f"""
+اطلاعات حساب کاربری شما:
+نام کاربری: {user_name}
+شماره تماس: {phone}
+ایمیل: {email}
+تعداد سفارشات شما: {ordersc}
+        """
+                send_message(cid, text, reply_markup= keyboard)
     else:
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton("بازگشت به صفحه اصلی", callback_data= "return_mainpage"))
@@ -910,13 +1258,16 @@ def content_photo_handler(message):
         usertempdata[cid]['orderid'] = orderid
         usertempdata[cid][orderid]= file_info.file_path.split('.')[-1]   #usertempdata[cid][orderid]
         os.makedirs(os.path.join('Data', str(cid)), exist_ok=True)
-     
-        with open(f"{os.path.join('Data', str(cid), str(userdata.get(cid)['orderscount']))}.{usertempdata.get(cid)[orderid]}", 'wb') as f:
+        with open(f"{os.path.join('Data', str(cid), str(orderid))}.{usertempdata.get(cid)[orderid]}", 'wb') as f:
             f.write(content)
 
         usersteps[cid] = "transaction_screenshot"
         step_transaction_screenshot_handler(message)
 
+
+
+
+        
     elif usersteps.get(cid) == "send user message from support to admin group":
         mid = message.message_id
         usermessage = message.caption
@@ -948,7 +1299,9 @@ def content_photo_handler(message):
         usersteps.pop(cid)
 
 
-        
+
+
+
     else:
         default_handler(message)
 #-------------------------------------------------------------------------------
@@ -964,7 +1317,7 @@ def content_photo_handler(message):
 
 
 
-@bot.message_handler(func=lambda message: True, content_types=['text'])
+@bot.message_handler(func=lambda message: True)
 def default_handler(message):
     send_message(message.chat.id, "متوجه نشدم منظورتون چیه, شاید دنبال دستوری باشید که میتونید از طریق /help بهش دست پیدا کنید." )
 

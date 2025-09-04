@@ -5,7 +5,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![Telegram Bot](https://img.shields.io/badge/Telegram-Bot_API-green)
-![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey)
+![MySQL](https://img.shields.io/badge/Database-MySQL-lightgrey)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -17,7 +17,7 @@
 *   **پرداخت امن:** تایید تراکنش‌ها توسط ادمین‌ها
 *   **سیستم حساب کاربری:** اطلاعات کاربری، تاریخچه سفارشات
 *   **لاگ‌گیری جامع:** ثبت تمامی فعالیت‌ها و خطاها
-*   **پایگاه داده SQLite:** ذخیره‌سازی مطمئن اطلاعات
+*   **پایگاه داده MySQL:** ذخیره‌سازی مطمئن اطلاعات و دسترسی راحت
 
 ## 🚀 شروع سریع
 
@@ -39,6 +39,13 @@
     ```bash
     pip install pyTelegramBotAPI
     ```
+    ```bash
+    pip install -r requirements.txt
+    ```
+    ```bash
+    pip install mysql-connector-python
+    ```
+
 
 3.  فایل پیکربندی را ایجاد و تنظیم کنید (`info.py`):
     ```python

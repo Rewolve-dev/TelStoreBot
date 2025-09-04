@@ -119,7 +119,7 @@ for prod, price in game_prices.items():
     insert_PRODUCT_data(5, prod, price)
 ```
 
-2. دستورات و متون مربوطه را در بخش `commands` و `Texts` اضافه کنید.
+2. دستورات مربوطه را در بخش `commands` اضافه کنید.
 
 ## 📝 لاگ‌گیری
 
@@ -129,7 +129,7 @@ for prod, price in game_prices.items():
 
 - توکن ربات را در فایل `info.py` قرار دهید و آن را در گیت‌هاب commit نکنید
 - فایل `info.py` را به `.gitignore` اضافه کنید
-- از یک دیتابیس امن‌تر مانند PostgreSQL برای محیط production استفاده کنید
+
 
 ## 📄 لایسنس
 

@@ -155,6 +155,7 @@ for prod, price in CRPrices.items():
 
 
 commands = {
+    
     "start"                    :       Texts['StartText'],
     "help"                     :       Texts['HelpMenuText'],
     "my_account_info"          :       Texts['MyAccountInfoText'],
@@ -173,7 +174,8 @@ admincommands = {
     'startchatwith'            :    "پیام از طریق ربات به یک کاربر با استفاده از آیدی عددی اون کاربر",
     'addproduct'               :    "اضافه کردن محصول",
     'removeproduct'            :    "حذف کردن محصول",
-}
+
+    }
 
 
 #-------------------------------------------------------------------------------
@@ -187,8 +189,15 @@ admincommands = {
 def listener(messages):
     for m in messages:
         if m.content_type == "text":
-            print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type:{m.content_type}, Message:\n{m.text}\n")
-            os.makedirs(os.path.join('Data', str(m.chat.id)), exist_ok=True)
+            print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type: Text, Message:\n{m.text}\n")
+        else:
+            print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type: {m.content_type}\n")
+
+        os.makedirs(os.path.join('Data', str(m.chat.id)), exist_ok=True)
+        with open("UserIDs.txt", "w") as f:
+            f.write(f"{str(m.chat.id)}\n")
+
+
 
 bot.set_update_listener(listener)
 
@@ -648,6 +657,18 @@ def command_remove_admin_handler(message):
         usersteps[cid] = "continue on removing admin"
     else:
         default_handler(message)
+
+
+@bot.message_handler(commands= ["send_message_to_all"])
+def command_send_message_to_all_handler(message):
+    cid = message.chat.id
+    if cid == OWNERID:
+        send_message(cid, "لطفا پیامتون رو وارد کنید.")
+        usersteps[cid] = "continue on sending message to all users"
+    else:
+        default_handler(message)
+
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -1151,23 +1172,35 @@ def step_continue_on_adding_admin_handler(message):
         usersteps.pop(cid)
 
 
+
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue on removing admin")
 def step_continue_on_removing_admin_handler(message):
-    cid = message.chat.id
     adminid = int(message.text)
     if int(adminid) == OWNERID:
-        send_message(cid, "حذف کردن مالک ممکن نمیباشد.")
+        send_message(OWNERID, "حذف کردن مالک ممکن نمیباشد.")
     else:
         try:
             delete_ADMIN_data(int(adminid))
             adminlist.pop(int(adminid))
         except Exception as e:
             print(e)
-            send_message(cid, f"حذف کردن ادمین به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
+            send_message(OWNERID, f"حذف کردن ادمین به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
         else:
-            send_message(cid, clean_text(f"ادمین با آیدی `{adminid}` با موفقیت از لیست ادمین ها حذف شد."), parse_mode = "MarkdownV2")
-            usersteps.pop(cid)
+            send_message(OWNERID, clean_text(f"ادمین با آیدی `{adminid}` با موفقیت از لیست ادمین ها حذف شد."), parse_mode = "MarkdownV2")
+            logging.info(f"Owner removed an admin (Admin ID: {adminid})")
+            usersteps.pop(OWNERID)
             
+
+
+@bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue on sending message to all users")
+def step_continue_on_sending_message_to_all_users_handler(message):
+    ownertextid = message.message_id
+    with open("UserIDs.txt", "r") as f:
+        lines = f.readlines()
+        for userid in lines:
+            copy_message(userid, OWNERID, ownertextid)
+
+
 
 
 

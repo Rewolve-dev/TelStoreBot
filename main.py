@@ -29,7 +29,7 @@ userdata = dict()
 usersteps = dict()
 orders = dict()
 usertempdata = dict()
-
+users = []
 
 
 Texts = {
@@ -197,6 +197,12 @@ def listener(messages):
         with open("UserIDs.txt", "w") as f:
             f.write(f"{str(m.chat.id)}\n")
 
+        with open("UserIDs.txt", "r") as f:
+            userids = f.readlines()
+            if userids:
+                for userid in userids:
+                    if userid not in users:
+                        users.append(userid)
 
 
 bot.set_update_listener(listener)
@@ -1195,10 +1201,8 @@ def step_continue_on_removing_admin_handler(message):
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue on sending message to all users")
 def step_continue_on_sending_message_to_all_users_handler(message):
     ownertextid = message.message_id
-    with open("UserIDs.txt", "r") as f:
-        lines = f.readlines()
-        for userid in lines:
-            copy_message(userid, OWNERID, ownertextid)
+    for userid in users:
+        copy_message(userid, OWNERID, ownertextid)
 
 
 
@@ -1332,7 +1336,11 @@ def content_photo_handler(message):
         usersteps.pop(cid)
 
 
-
+    elif usersteps.get(cid) == "continue on sending message to all users":
+        ownertextid = message.message_id
+        for userid in users:
+            copy_message(userid, OWNERID, ownertextid)
+        
 
 
     else:

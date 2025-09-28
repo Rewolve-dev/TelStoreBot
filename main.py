@@ -15,7 +15,6 @@ from info import *
 from DML import *
 from DQL import *
 
-print(API_TOKEN)
 
 logging.getLogger('telebot').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
@@ -467,7 +466,6 @@ def callback_handler(call):
         #"delete_sent_message"
         global usersMesSent
         if cid == OWNERID:
-            print(usersMesSent)
             for userid, mid in usersMesSent.items():
                 delete_message(userid, mid)
             send_message(OWNERID, "پیام های ارسالی حذف شدند.")
@@ -1207,7 +1205,6 @@ def step_continue_on_removing_admin_handler(message):
             delete_ADMIN_data(int(adminid))
             adminlist.pop(int(adminid))
         except Exception as e:
-            print(e)
             send_message(OWNERID, f"حذف کردن ادمین به مشکلی برخورد. ارور جهت ارسال برای دوولوپر:\n{e}")
         else:
             send_message(OWNERID, clean_text(f"ادمین با آیدی `{adminid}` با موفقیت از لیست ادمین ها حذف شد."), parse_mode = "MarkdownV2")
@@ -1225,9 +1222,7 @@ def step_continue_on_sending_message_to_all_users_handler(message):
     
     for userid in userS:#searched in USERS in DB
         mid = copy_message(userid, OWNERID, ownertextid).message_id
-        print(mid)
         usersMesSent[userid] = mid
-        print(usersMesSent)
         sent_count += 1
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("حذف پیام ارسالی.", callback_data = "delete_sent_message"))

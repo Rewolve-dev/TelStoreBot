@@ -1,4 +1,4 @@
-#PUBLISH: 2025-09-01 BY REWOLVE (@Rewolve)
+    #PUBLISH: 2025-09-01 BY REWOLVE (@Rewolve)
 
 import telebot
 from telebot.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
@@ -17,7 +17,6 @@ from DQL import *
 
 
 
-
 logging.getLogger('telebot').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.basicConfig(filename = "StoreTelBot.log", level = logging.DEBUG, format = '%(asctime)s  |||||||  %(message)s')
@@ -30,8 +29,7 @@ userdata = dict()
 usersteps = dict()
 orders = dict()
 usertempdata = dict()
-users = []
-
+usersMesSent = dict()
 
 Texts = {
     "StartText"                     :   "شروع کار ربات",
@@ -179,13 +177,24 @@ admincommands = {
     }
 
 
+
+ownercommands = {
+
+    "add_admin"                :     "اضافه کردن ادمین با استفاده از آیدی تلگرام اون ادمین",
+    "remove_admin"             :     "حذف ادمین با استفاده از آیدی تلگرام اون ادمین",
+    "send_message_to_all"      :     "ارسال پیام برای تمامی کاربران ربات",
+    "delete_last_message"      :     "حذف آخرین پیام ارسالی برای تمامی کاربران",
+}
+
+
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------              LISTENER
-
+users = get_USERS_IDS()
 
 def listener(messages):
     for m in messages:
@@ -195,15 +204,9 @@ def listener(messages):
             print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type: {m.content_type}\n")
 
         os.makedirs(os.path.join('Data', str(m.chat.id)), exist_ok=True)
-        with open("UserIDs.txt", "w") as f:
-            f.write(f"{str(m.chat.id)}\n")
-
-        with open("UserIDs.txt", "r") as f:
-            userids = f.readlines()
-            if userids:
-                for userid in userids:
-                    if userid not in users:
-                        users.append(userid)
+        if m.chat.id not in users:
+            insert_USERS_data(m.chat.id)
+            users = get_USERS_IDS()
 
 
 bot.set_update_listener(listener)
@@ -377,16 +380,12 @@ def callback_handler(call):
                     send_message(cid, f"محصول آیدی {prodid} با موفقیت حذف شد.")
                     edit_message_reply_markup(cid, mid, reply_markup= None)
 
-
-
     elif data.split("_")[0] == "change":
         if data.split("_")[1] == "acc":
             keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add("تغییر شماره تلفن", "تغییر ایمیل")
             send_message(cid, "کدوم یکی رو میخواید تغییر بدید؟", reply_markup= keyboard)
             
-
-
     elif data.split("_")[0] == "finishedorder":
         adminID = call.from_user.id
         userid = adminlist[adminID]['order']['order_for_userid']
@@ -461,9 +460,17 @@ def callback_handler(call):
             else:
                 bot.answer_callback_query(call_id, "شما ادمین ربات نیستید!")
     
+    elif data.split("_")[0] == "delete":
+        #"delete_sent_message"
+        if cid == OWNERID:
+            for userid, mid in usersMesSent.items():
+                delete_message(userid, mid)
+            send_message(OWNERID, "پیام های ارسالی حذف شدند.")
+        else:
+            bot.answer_callback_query(call_id, "شما مدیر ربات نیستید.")
+            
+            # keyboard.add(InlineKeyboardButton(f"پاسخ به کاربر @{message.chat.username}", callback_data= f"reply_admin_to_user_{cid}_{mid}"))
     
-
-# keyboard.add(InlineKeyboardButton(f"پاسخ به کاربر @{message.chat.username}", callback_data= f"reply_admin_to_user_{cid}_{mid}"))
     elif data.split("_")[0] == "reply":
         adminID = call.from_user.id
         userid = data.split("_")[-2]
@@ -481,7 +488,6 @@ def callback_handler(call):
         edit_message_reply_markup(cid,mid, reply_markup= keyboard)
         send_message(adminID, "لطفا پیام ارسالی خودتون به کاربر رو ارسال کنید.")
         usersteps[adminID] = "send admin message to user"
-
 
     elif data == "nothing":
         bot.answer_callback_query(call_id, "چیزی برای نمایش دادن نیست!")
@@ -537,6 +543,11 @@ def help_menu(message):
         text+= "\n----------------------------\nدستورات ادمین:\n"
         for acommand, adesc in admincommands.items():
             text += f"/{acommand} : {adesc}\n"    
+    if cid == OWNERID:
+        text+= "\n ***************************\n دستورات مالک:\n"
+        for ocommand, odesc in ownercommands.items():
+            text += f"/{ocommand} : {odesc}\n"
+
     send_message(cid, text)
 
 @bot.message_handler(commands= ['my_account_info'])#DONE-----entering_account_info_process
@@ -642,7 +653,7 @@ def command_removeproduct_handler(message):
         default_handler(message)
 
 
-
+#-------------------------------------------------------------------------------    OWNER COMMANDS
 
 @bot.message_handler(commands= ["add_admin"])
 def command_add_admin_handler(message):
@@ -1202,8 +1213,15 @@ def step_continue_on_removing_admin_handler(message):
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue on sending message to all users")
 def step_continue_on_sending_message_to_all_users_handler(message):
     ownertextid = message.message_id
-    for userid in users:
-        copy_message(userid, OWNERID, ownertextid)
+    sent_count = 0
+    for userid in users:#searched in USERS in DB
+        mid = copy_message(userid, OWNERID, ownertextid)
+        usersMesSent = {}
+        usersMesSent[userid] = mid
+        sent_count += 1
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("حذف پیام ارسالی.", callback_data = "delete_sent_message"))
+    send_message(OWNERID, f"پیام شما برای کاربر ها ارسال شد({sent_count} کاربر). نکات مهم:\nفقط بعد از ارسال یک پیام میتونید اون پیام رو تا 48 ساعت پاک کنید.\nبعد از ارسال پیامی نمیتونید پیام قبلیتر رو پاک کنید.", reply_markup = keyboard)
 
 
 
@@ -1337,11 +1355,7 @@ def content_photo_handler(message):
         usersteps.pop(cid)
 
 
-    elif usersteps.get(cid) == "continue on sending message to all users":
-        ownertextid = message.message_id
-        for userid in users:
-            copy_message(userid, OWNERID, ownertextid)
-        
+
 
 
     else:

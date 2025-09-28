@@ -77,3 +77,23 @@ def get_ALLPRODUCT_data_in_GAMESECTION(GamesectionID):
     cur.close()
     conn.close()
     return apr_result
+
+
+
+
+def get_USERS_IDS(count = None):
+    conn = mysql.connector.connection.MySQLConnection(**config)
+    cur = conn.cursor()
+    if count is None:
+        SQL_Query = "SELECT ID FROM USERS"
+        cur.execute(SQL_Query)
+    else:
+        SQL_Query = "SELECT ID FROM USERS LIMIT %s"
+        cur.execute(SQL_Query, (count,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    result = []
+    for row in rows:
+        result.append(row[0])
+    return result

@@ -75,6 +75,16 @@ def insert_ORDERS_data(id, transactionphoto,cust_id, admin_id, prod_id, date= No
 
 
 
+def insert_USERS_data(id):
+    connection = mysql.connector.connection.MySQLConnection(**config)
+    cur = connection.cursor()
+    SQL_Query = "INSERT INTO USERS (ID) VALUES (%s);"
+    cur.execute(SQL_Query, (id,))
+    connection.commit()
+    cur.close()
+    connection.close()
+    print(f"User data id:{id} successfully inserted")
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

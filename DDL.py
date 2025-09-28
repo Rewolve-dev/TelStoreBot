@@ -13,6 +13,20 @@ def create_n_drop():
 
 
 
+def createtableUSERS():
+    connection = mysql.connector.connect(**config)
+    cur = connection.cursor()
+    cur.execute("""
+    CREATE TABLE USERS (
+    ID              BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    REGISTER_DATE   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    LAST_UPDATE     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+""")    
+    print("table USERS created")
+
+
 def createtableCUSTOMER():
     connection = mysql.connector.connect(**config)
     cur = connection.cursor()
@@ -114,3 +128,4 @@ if __name__ == "__main__":
     createtableGAMESECTION()
     createtablePRODUCT()
     createtableORDERS()
+    createtableUSERS()

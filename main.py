@@ -15,7 +15,7 @@ from info import *
 from DML import *
 from DQL import *
 
-
+print(API_TOKEN)
 
 logging.getLogger('telebot').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
@@ -194,9 +194,11 @@ ownercommands = {
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------              LISTENER
-users = get_USERS_IDS()
+
+userS = get_USERS_IDS()
 
 def listener(messages):
+
     for m in messages:
         if m.content_type == "text":
             print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type: Text, Message:\n{m.text}\n")
@@ -204,9 +206,10 @@ def listener(messages):
             print(f"@{m.chat.username}, Name: {m.chat.first_name} ||| {datetime.datetime.today() : '%c'}, type: {m.content_type}\n")
 
         os.makedirs(os.path.join('Data', str(m.chat.id)), exist_ok=True)
-        if m.chat.id not in users:
+        global userS
+        if m.chat.id not in userS:
             insert_USERS_data(m.chat.id)
-            users = get_USERS_IDS()
+            userS = get_USERS_IDS()
 
 
 bot.set_update_listener(listener)
@@ -261,7 +264,7 @@ def edit_message_reply_markup(*args, **kwargs):
 
 
 def clean_text(text):
-    return str(text).replace('.', '\.',).replace('_', "\_")
+    return str(text).replace('.', '\\.',).replace('_', "\\_")
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -462,13 +465,16 @@ def callback_handler(call):
     
     elif data.split("_")[0] == "delete":
         #"delete_sent_message"
+        global usersMesSent
         if cid == OWNERID:
+            print(usersMesSent)
             for userid, mid in usersMesSent.items():
                 delete_message(userid, mid)
             send_message(OWNERID, "پیام های ارسالی حذف شدند.")
         else:
             bot.answer_callback_query(call_id, "شما مدیر ربات نیستید.")
-            
+        
+        usersteps.pop(OWNERID)
             # keyboard.add(InlineKeyboardButton(f"پاسخ به کاربر @{message.chat.username}", callback_data= f"reply_admin_to_user_{cid}_{mid}"))
     
     elif data.split("_")[0] == "reply":
@@ -1050,9 +1056,9 @@ def step_transaction_screenshot_handler(message):
     clean_text(text)
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("✅قبول کردن سفارش", callback_data= f"confirmed_order_{orderid}_{cid}"))
-    keyboard.add(InlineKeyboardButton("رد کردن سفارش \ اطلاعات اشتباه", callback_data= f"rejected_order_wronginfo_{orderid}_{cid}"))
-    keyboard.add(InlineKeyboardButton("رد کردن سفارش \ رسید واریزی فیک", callback_data= f"rejected_order_faketrphoto_{orderid}_{cid}"))
-    keyboard.add(InlineKeyboardButton("رد کردن سفارش \ مبلغ واریزی نادرست", callback_data= f"rejected_order_wrongsentamount_{orderid}_{cid}"))
+    keyboard.add(InlineKeyboardButton("رد کردن سفارش \\ اطلاعات اشتباه", callback_data= f"rejected_order_wronginfo_{orderid}_{cid}"))
+    keyboard.add(InlineKeyboardButton("رد کردن سفارش \\ رسید واریزی فیک", callback_data= f"rejected_order_faketrphoto_{orderid}_{cid}"))
+    keyboard.add(InlineKeyboardButton("رد کردن سفارش \\ مبلغ واریزی نادرست", callback_data= f"rejected_order_wrongsentamount_{orderid}_{cid}"))
     filename = f"{str(orderid)}.{usertempdata.get(cid)[orderid]}"
     if usertempdata.get(cid):
         usertempdata.pop(cid)
@@ -1212,17 +1218,21 @@ def step_continue_on_removing_admin_handler(message):
 
 @bot.message_handler(func= lambda message: usersteps.get(message.chat.id) == "continue on sending message to all users")
 def step_continue_on_sending_message_to_all_users_handler(message):
+    global usersMesSent
     ownertextid = message.message_id
     sent_count = 0
-    for userid in users:#searched in USERS in DB
-        mid = copy_message(userid, OWNERID, ownertextid)
-        usersMesSent = {}
+    usersMesSent = {}
+    
+    for userid in userS:#searched in USERS in DB
+        mid = copy_message(userid, OWNERID, ownertextid).message_id
+        print(mid)
         usersMesSent[userid] = mid
+        print(usersMesSent)
         sent_count += 1
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("حذف پیام ارسالی.", callback_data = "delete_sent_message"))
     send_message(OWNERID, f"پیام شما برای کاربر ها ارسال شد({sent_count} کاربر). نکات مهم:\nفقط بعد از ارسال یک پیام میتونید اون پیام رو تا 48 ساعت پاک کنید.\nبعد از ارسال پیامی نمیتونید پیام قبلیتر رو پاک کنید.", reply_markup = keyboard)
-
+    
 
 
 
